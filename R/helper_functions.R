@@ -72,9 +72,9 @@
     # Sum M values and cvg values for all CpGs in each region (subject)
     . <- NULL 
     out_m = metadata %>% group_by(subject_mtch) %>% 
-              summarise_all(funs(sum(.,na.rm = TRUE)))
+      summarise_all(funs(sum(.,na.rm = TRUE)))
     out_cvg = metadata_cvg %>% group_by(subject_mtch) %>% 
-              summarise_all(funs(sum(.,na.rm = TRUE)))
+      summarise_all(funs(sum(.,na.rm = TRUE)))
     dmp_granges <- train_granges
     mcols(dmp_granges) <- 
       out_m[, !(colnames(out_m) %in% c("query_mtch", "subject_mtch"))] /
@@ -86,7 +86,7 @@
   } else {
     # Average M values for all CpGs in each region (subject)
     out = metadata %>% group_by(subject_mtch) %>% 
-              summarise_all(funs(mean(., na.rm = TRUE)))
+      summarise_all(funs(mean(., na.rm = TRUE)))
     dmp_granges <- train_granges
     mcols(dmp_granges) <- out[, !(colnames(out) %in%
                                     c("query_mtch", "subject_mtch"))]
@@ -143,6 +143,15 @@
     output <- list(cvg_targetbs = cvg_targetbs, 
                    M_targetbs = M_targetbs, gr_object = gr_object)
   }
+  
+  if(is(object, "GenomicRatioSet")){
+    pd = pData(object)
+    gr_object <- granges(object)
+    beta_values = assay(object)
+    output <- list(pd = pd, gr_object = gr_object, 
+                   beta_values = beta_values)
+  }
+  
   return(output)
 }
 
@@ -178,10 +187,10 @@
 #' 
 # dat <- preprocess_estimatecc(BS, init_param_method = "random")
 .preprocess_estimatecc <- function(object, verbose=TRUE,
-                              init_param_method = "random", 
-                              celltype_specific_dmrs = celltype_specific_dmrs)
+                                   init_param_method = "random", 
+                                   celltype_specific_dmrs = celltype_specific_dmrs)
 {
-
+  
   if(init_param_method == "known_regions"){
     offMethRegions = onMethRegions <- NULL 
     dir <- system.file("data", package="methylCC")
@@ -196,91 +205,92 @@
       grd1 = makeGRangesFromDataFrame(onMethRegions)
     } 
   }
-
-  if(is(object, "RGChannelSet") || is(object, "GenomicMethylSet")) {       
+  
+  if(is(object, "RGChannelSet") || is(object, "GenomicMethylSet") || is(object, "GenomicRatioSet")) {       
     if(verbose){
       message("[estimatecc] Preprocessing RGChannelSet or
               GenomicMethylSet object.") 
     }
-      eout <- .extract_raw_data(object) 
-      keep_dmrs <- 
-        .pick_target_positions(target_granges=eout$gr_object,
+    eout <- .extract_raw_data(object) 
+    keep_dmrs <- 
+      .pick_target_positions(target_granges=eout$gr_object,
+                             target_object = eout$beta_values,
+                             dmp_regions=celltype_specific_dmrs)$dmp_granges
+    zmat_sub <- subsetByOverlaps(celltype_specific_dmrs, 
+                                 keep_dmrs, type = "equal")
+    
+    if(init_param_method == "known_regions"){
+      y_d0 <- as.data.frame(
+        .pick_target_positions(target_granges = eout$gr_object,
                                target_object = eout$beta_values,
-                               dmp_regions=celltype_specific_dmrs)$dmp_granges
-      zmat_sub <- subsetByOverlaps(celltype_specific_dmrs, 
-                                   keep_dmrs, type = "equal")
-      
-      if(init_param_method == "known_regions"){
-        y_d0 <- as.data.frame(
-                  .pick_target_positions(target_granges = eout$gr_object,
-                                         target_object = eout$beta_values,
-                                         dmp_regions = grd0)$avg_dmr_dat)
-        a0init <- mean(colMeans(y_d0))
-        sig0init <- mean(apply(y_d0, 2, var))
-        y_d1 <- as.data.frame(
-                  .pick_target_positions(target_granges = eout$gr_object,
-                                         target_object = eout$beta_values,
-                                         dmp_regions = grd1)$avg_dmr_dat)
-        a1init <- mean(colMeans(y_d1))
-        sig1init <- mean(apply(y_d1, 2, var))
-      }
+                               dmp_regions = grd0)$avg_dmr_dat)
+      a0init <- mean(colMeans(y_d0))
+      sig0init <- mean(apply(y_d0, 2, var))
+      y_d1 <- as.data.frame(
+        .pick_target_positions(target_granges = eout$gr_object,
+                               target_object = eout$beta_values,
+                               dmp_regions = grd1)$avg_dmr_dat)
+      a1init <- mean(colMeans(y_d1))
+      sig1init <- mean(apply(y_d1, 2, var))
+    }
   }
   
   if(is(object, "BSseq")){
-      if(verbose){
-        message("[estimatecc] Extracting BSSeq data.") }
-      eout <- .extract_raw_data(object) 
-
-      keep_dmrs <- .pick_target_positions(target_granges = eout$gr_object,
-                                         target_object = eout$M_targetbs, 
-                                         target_cvg = eout$cvg_targetbs,
-                              dmp_regions = celltype_specific_dmrs)$dmp_granges
-      zmat_sub <- subsetByOverlaps(celltype_specific_dmrs, keep_dmrs,
-                                   type = "equal")
-      if(verbose){
-        mes <- "[estimatecc] BSseq object contained
+    if(verbose){
+      message("[estimatecc] Extracting BSSeq data.") }
+    eout <- .extract_raw_data(object) 
+    
+    keep_dmrs <- .pick_target_positions(target_granges = eout$gr_object,
+                                        target_object = eout$M_targetbs, 
+                                        target_cvg = eout$cvg_targetbs,
+                                        dmp_regions = celltype_specific_dmrs)$dmp_granges
+    zmat_sub <- subsetByOverlaps(celltype_specific_dmrs, keep_dmrs,
+                                 type = "equal")
+    if(verbose){
+      mes <- "[estimatecc] BSseq object contained
                 %s out of %s celltype-specific regions."
-        message(sprintf(mes, length(keep_dmrs),
-                        length(celltype_specific_dmrs)))
-      }
-      
-      if(init_param_method == "known_regions"){
-        y_d0 <- as.data.frame(
-          .pick_target_positions(
-            target_granges = eout$gr_object,
-            target_object = eout$M_targetbs,
-            target_cvg = eout$cvg_targetbs,
-            dmp_regions = grd0)$avg_dmr_dat)
-        a0init <- mean(colMeans(y_d0))
-        sig0init <- mean(apply(y_d0, 2, var))
-        y_d1 <- as.data.frame(
-          .pick_target_positions(
-            target_granges = eout$gr_object,
-            target_object = eout$M_targetbs,
-            target_cvg = eout$cvg_targetbs,
-            dmp_regions = grd1)$avg_dmr_dat)
-        a1init <- mean(colMeans(y_d1))
-        sig1init <- mean(apply(y_d1, 2, var))
-      }
+      message(sprintf(mes, length(keep_dmrs),
+                      length(celltype_specific_dmrs)))
     }
+    
+    if(init_param_method == "known_regions"){
+      y_d0 <- as.data.frame(
+        .pick_target_positions(
+          target_granges = eout$gr_object,
+          target_object = eout$M_targetbs,
+          target_cvg = eout$cvg_targetbs,
+          dmp_regions = grd0)$avg_dmr_dat)
+      a0init <- mean(colMeans(y_d0))
+      sig0init <- mean(apply(y_d0, 2, var))
+      y_d1 <- as.data.frame(
+        .pick_target_positions(
+          target_granges = eout$gr_object,
+          target_object = eout$M_targetbs,
+          target_cvg = eout$cvg_targetbs,
+          dmp_regions = grd1)$avg_dmr_dat)
+      a1init <- mean(colMeans(y_d1))
+      sig1init <- mean(apply(y_d1, 2, var))
+    }
+  }
   
   ymat <- mcols(keep_dmrs) 
+  
   if(!is.null(sampleNames(object))){ 
-    colnames(ymat) <- sampleNames(object)
-  }
+    colnames(ymat) <- sampleNames(object)}
+  
   n <- ncol(mcols(keep_dmrs))
   ids <- colnames(mcols(zmat_sub))
   zmat <- as.matrix(as.data.frame(mcols(zmat_sub)))
-
+  
   if(init_param_method == "known_regions"){
     output <- list(ymat = ymat, n = n, ids = ids, zmat = zmat,
-         a0init = a0init, a1init = a1init,
-         sig0init = sig0init, sig1init = sig1init,
-         gr_object = eout$gr_object, keep_dmrs = keep_dmrs)
+                   a0init = a0init, a1init = a1init,
+                   sig0init = sig0init, sig1init = sig1init,
+                   gr_object = eout$gr_object, keep_dmrs = keep_dmrs)
     rm(eout)
   } else {
     output <- list(ymat = ymat, n = n, ids = ids, zmat = zmat,
-         gr_object = eout$gr_object, keep_dmrs = keep_dmrs)
+                   gr_object = eout$gr_object, keep_dmrs = keep_dmrs)
     rm(eout)
   }
   return(output)
@@ -408,8 +418,8 @@
 #' used in \code{.methylcc_engine()}
 #'
 .methylcc_estep <- function(Ys, Zs, current_pi_mle, 
-                             current_theta,
-                             meth_status = 0)
+                            current_theta,
+                            meth_status = 0)
 {
   R <- nrow(Zs)
   n <- ncol(Ys)
@@ -485,8 +495,8 @@
 #' @importFrom quadprog solve.QP
 #' 
 .methylcc_mstep <- function(Ys, Zs, current_pi_mle, 
-                             current_theta, 
-                             estep0, estep1)
+                            current_theta, 
+                            estep0, estep1)
 {
   R <- dim(Zs)[1]
   K <- dim(Zs)[2]
@@ -497,22 +507,26 @@
                           "sig1" = mean(estep1$mom2) - mean(estep1$mom1)^2)
   x0 <- (sweep((1-Zs), 1, estep0$mom1, FUN = "*") +
            sweep(Zs,     1, estep1$mom1, FUN = "*"))
+  
   new_pi_mle <- abs(t(apply(Ys, 2, function(ys){
     solve.QP(Dmat = (t(x0)%*%x0),
              dvec = t(x0)%*%t(t(ys)), Amat = cbind(rep(1,K), diag(K)),
              bvec = c(1, rep(0, K)), meq = 1)$sol })))
+  
   tau_est <- (1/(R*n)) * sum((Ys - x0 %*% t(new_pi_mle))^2)
+  
   new_theta <- cbind(new_theta, "tau" = tau_est,
                      "lik_fun" = -((R*n)/2)*log(2*pi*tau_est) -
                        (1/(2*tau_est)) * sum((Ys - x0 %*% t(new_pi_mle))^2) -
                        ((R*n)/2) * log(2*pi*new_theta$sig0) -
                        (n/(2*new_theta$sig0)) * 
-                              sum((estep0$mom1 - new_theta$alpha0)^2) -
+                       sum((estep0$mom1 - new_theta$alpha0)^2) -
                        ((R*n)/2) * log(2*pi*new_theta$sig1) -
                        (n/(2*new_theta$sig1)) *
-                              sum((estep1$mom1 - new_theta$alpha1)^2))
+                       sum((estep1$mom1 - new_theta$alpha1)^2))
   
   return(list("new_theta" = new_theta, "new_pi_mle" = new_pi_mle))
+  
 }
 
 
@@ -532,7 +546,7 @@
 #' \code{estimatecc()}. 
 #' 
 .methylcc_engine <- function(Ys, Zs, current_pi_mle, 
-                              current_theta, epsilon, max_iter)
+                             current_theta, epsilon, max_iter)
 {
   final_theta <- NULL
   final_pi_mle <- NULL
@@ -542,22 +556,22 @@
     # E-Step
     EStep0 <- 
       .methylcc_estep(Ys = Ys, Zs = Zs, 
-                       current_pi_mle = current_pi_mle, 
-                       current_theta = current_theta, 
-                       meth_status = 0)
+                      current_pi_mle = current_pi_mle, 
+                      current_theta = current_theta, 
+                      meth_status = 0)
     EStep1 <- 
       .methylcc_estep(Ys = Ys, Zs = Zs, 
-                       current_pi_mle = current_pi_mle, 
-                       current_theta = current_theta, 
-                       meth_status = 1)
+                      current_pi_mle = current_pi_mle, 
+                      current_theta = current_theta, 
+                      meth_status = 1)
     
     # M-Step
     update_step <- 
       .methylcc_mstep(Ys = Ys, Zs = Zs, 
-                       current_pi_mle = current_pi_mle, 
-                       current_theta = current_theta, 
-                       estep0=EStep0,
-                       estep1=EStep1)
+                      current_pi_mle = current_pi_mle, 
+                      current_theta = current_theta, 
+                      estep0=EStep0,
+                      estep1=EStep1)
     
     if(abs(update_step$new_theta$lik_fun - current_theta$lik_fun) >= epsilon){
       final_pi_mle <- update_step$new_pi_mle
@@ -575,4 +589,3 @@
   }
   return(list("pi_mle" = final_pi_mle, "theta" = final_theta))
 }
-

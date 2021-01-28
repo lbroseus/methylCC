@@ -43,13 +43,12 @@ setClass(
 
 setMethod("show", "estimatecc",
           function(object){
-            cat("estimatecc: Estimate Cell Composition of Whole Blood 
-                Samples using DNA methylation\n")
+            cat("estimatecc: Estimate Reference Cell Composition using DNA methylation\n")
             cat("   Input object class: ", object@summary$class, "\n")
             cat("   Reference cell types: ", object@summary$celltypes, "\n")
-            cat("   Number of Whole Blood Samples: ", 
+            cat("   Number of Samples: ", 
                 paste(object@summary$n_samples), "\n")
-            cat("   Name of Whole Blood Samples: ", 
+            cat("   Name of Samples: ", 
                 paste(object@summary$sample_names), "\n")
           }
 )
