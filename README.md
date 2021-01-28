@@ -1,40 +1,31 @@
 # methylCC
 
-### Citation 
-
-Hicks SC, Irizarry RA. (2019). _Genome Biology_ **20**, 261. [https://doi.org/10.1186/s13059-019-1827-8](https://doi.org/10.1186/s13059-019-1827-8)
-
-### Why use methylCC? 
-
 This is a package to estimate the cell composition 
-    of whole blood in DNA methylation measured on any 
+    of bulk DNA methylation measured on any 
     platform technology (e.g. Illumina 450K microarray, 
     whole genome bisulfite sequencing (WGBS) and 
-    reduced representation bisulfite sequencing (RRBS)). 
+    reduced representation bisulfite sequencing (RRBS))
+    using reference cell-type-specific methylation data. 
 
 For help with the **methylCC** R-package, there is a vignette available in the /vignettes folder.
+
+### Updates from the original version
+
+28/01/2021:
+* Added the option to use already processed methylation data 
+(eg: normalized beta values).  
+* New function *find_dmrs_cust()* for finding Differentially Methylated Regions (DMRs) from
+custom reference-cell-type-specific methylation data (esp: in other tissues than Whole Blood)
   
 ### Installing methylCC
 
 The R-package **methylCC** can be installed from Github using the R 
 package [devtools](https://github.com/hadley/devtools): 
 
-
-Use  to install the latest version of **methylCC** from Github:
+To install the tinkered version of **methylCC** from Github:
 ```s
 library(devtools)
-install_github("stephaniehicks/methylCC")
-```
-
-It can also be installed using Bioconductor: 
-
-```s
-# install BiocManager from CRAN (if not already installed)
-if (!requireNamespace("BiocManager", quietly=TRUE))
-    install.packages("BiocManager")
-
-# install methylCC package
-BiocManager::install("methylCC")
+install_github("lbroseus/methylCC")
 ```
 
 After installation, the package can be loaded into R.
@@ -42,9 +33,9 @@ After installation, the package can be loaded into R.
 library(methylCC)
 ```
 
-# Bug reports
-Report bugs as issues on the [GitHub repository](https://github.com/stephaniehicks/methylCC)
+### Citation 
 
+Hicks SC, Irizarry RA. (2019). _Genome Biology_ **20**, 261. [https://doi.org/10.1186/s13059-019-1827-8](https://doi.org/10.1186/s13059-019-1827-8)
 
 # Authors
 
