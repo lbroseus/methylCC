@@ -1,4 +1,4 @@
-# methylCC
+# Extending methylCC to handle any reference cell types
 
 This is a package to estimate the cell composition 
     of bulk DNA methylation measured on any 
@@ -6,8 +6,6 @@ This is a package to estimate the cell composition
     whole genome bisulfite sequencing (WGBS) and 
     reduced representation bisulfite sequencing (RRBS))
     using reference cell-type-specific methylation data. 
-
-For help with the **methylCC** R-package, there is a vignette available in the /vignettes folder.
 
 ### Updates from the original version
 
