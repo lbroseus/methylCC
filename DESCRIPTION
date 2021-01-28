@@ -6,7 +6,7 @@ Authors@R: c(
 		email = "shicks19@jhu.edu", 
 		comment = c(ORCID = "0000-0002-7858-0231")),
     person("Rafael", "Irizarry", role = "aut", 
-		comment = c(ORCID = "0000-0002-3944-4309"))
+		comment = c(ORCID = "0000-0002-3944-4309")),
 	person("Lucile", "Broseus", email = "lucile.broseus@univ-grenoble-alpes.fr")
 	)
 Imports: Biobase, GenomicRanges, IRanges, S4Vectors,
