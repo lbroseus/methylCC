@@ -15,7 +15,7 @@ For help with the **methylCC** R-package, there is a vignette available in the /
 * Added the option to use already processed methylation data 
 (eg: normalized beta values).  
 * New function *find_dmrs_cust()* for finding Differentially Methylated Regions (DMRs) from
-custom reference-cell-type-specific methylation data (esp: in other tissues than Whole Blood)
+custom reference-cell-type-specific methylation data (esp: in tissues other than Whole Blood)
   
 ### Installing methylCC
 
@@ -31,6 +31,15 @@ install_github("lbroseus/methylCC")
 After installation, the package can be loaded into R.
 ```s
 library(methylCC)
+```
+
+### Installing the original version of methylCC
+
+To install the original version of **methylCC** from Github:
+
+```s
+library(devtools)
+install_github("stephaniehicks/methylCC")
 ```
 
 ### Citation 
