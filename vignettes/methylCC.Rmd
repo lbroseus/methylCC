@@ -164,6 +164,45 @@ ggplot(dfcombined, aes(x=est.x, y = est.y, color = celltype)) +
 
 We see the estimates closely match for the six cell types. 
 
+## Using custom reference data
+
+```{r, echo = T, eval = FALSE}
+
+# Reference annotation to be used:
+annot <- c("IlluminaHumanMethylation450k", "ilmn12.hg19")
+names(annot) <- c("array", "annotation")
+
+# Custom cell-type specific beta values (eg: generated from single-cell experiments)
+# row: CpGs ; column: Cells
+mset_train <- RatioSet(Beta = scBetaValues)
+
+# Reference cell-types measured through single-cell experiments,
+# matching columns in scBetaValues
+cellTypes <- c("Type1", "Type1", "Type2", "Type3")
+
+mset_train@annotation <- annot
+pData(mset_train)$CellType <- cellTypes
+pData(mset_train)$SampleName <- colnames(scBetaValues)
+  
+```
+
+```{r, echo = T, eval = FALSE}
+  
+# Find cell-type specific DMRs:
+  
+find_dmrs_object <- methylCC::find_dmrs_custom(mset_train = mset_train)
+  
+```
+
+```{r, echo = T, eval = FALSE}
+  
+# Estimate reference-cell-type composition in a bulk methylation experiment
+
+object <- minfi::mapToGenome( RatioSet(Beta = bulkBetaValues, annotation = annot) )
+  
+estimate_result <- estimatecc_custom(object, find_dmrs_object)
+  
+```
 
 # SessionInfo
 
