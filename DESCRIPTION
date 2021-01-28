@@ -1,12 +1,14 @@
 Package: methylCC
-Title: Estimate the cell composition of whole blood in DNA methylation samples
-Version: 1.1.1
+Title: Estimate reference cell-type composition in DNA methylation samples
+Version: 1.1.2
 Authors@R: c(
     person(c("Stephanie", "C."), "Hicks", role = c("aut", "cre"), 
 		email = "shicks19@jhu.edu", 
 		comment = c(ORCID = "0000-0002-7858-0231")),
     person("Rafael", "Irizarry", role = "aut", 
-		comment = c(ORCID = "0000-0002-3944-4309")))
+		comment = c(ORCID = "0000-0002-3944-4309"))
+	person("Lucile", "Broseus", email = "lucile.broseus@univ-grenoble-alpes.fr")
+	)
 Imports: Biobase, GenomicRanges, IRanges, S4Vectors,
     dplyr, magrittr, minfi, bsseq, quadprog, plyranges, 
     stats, utils, bumphunter, genefilter,
@@ -29,5 +31,5 @@ VignetteBuilder: knitr
 RoxygenNote: 6.1.1
 Encoding: UTF-8
 License: CC BY 4.0
-BugReports: https://github.com/stephaniehicks/methylCC/
-URL: https://github.com/stephaniehicks/methylCC/
+BugReports: https://github.com/lbroseus/methylCC/
+URL: https://github.com/lbroseus/methylCC/
