@@ -1,6 +1,6 @@
 Package: methylCC
 Title: Estimate reference cell-type composition in DNA methylation samples
-Version: 1.1.2
+Version: 2.0.0
 Authors@R: c(
     person(c("Stephanie", "C."), "Hicks", role = c("aut", "cre"), 
 		email = "shicks19@jhu.edu", 
