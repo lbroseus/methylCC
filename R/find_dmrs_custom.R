@@ -1,4 +1,4 @@
-# methylCC: 
+# methylCC:
 # Adapted from R/find_dmrs.R to allow custom cell-type-specific reference
 #
 # Author: Lucile Broseus
@@ -57,7 +57,7 @@
 #' @param pairwise_comparison TRUE/FAlSE of whether all pairwise
 #' comparisons (e.g. methylated in Granulocytes and Monocytes,
 #' but not methylated in other cell types). Default if FALSE.
-#' 
+#'
 #' @return A list of data frames and GRanges objects.
 #'
 #' @import minfi
@@ -70,7 +70,7 @@
 #' @importFrom S4Vectors queryHits
 #' @importFrom stats model.matrix
 #' @importFrom utils head
-#' 
+#'
 #' @export
 #_______________________________________________________#
 
@@ -90,9 +90,9 @@ find_dmrs_custom <- function(mset_train,
                            cpg_down_dm_cutoff = 0,
                            pairwise_comparison = FALSE
                            ){
-  
+
   mset_train <- mapToGenome(mset_train, mergeManifest = FALSE)
-  
+
   # find cell-type specific regions using only overlap CpGs in target object
   if(!is.null(gr_target)){
     # which of the 450K CpGs overlap with the target CpGs
@@ -103,7 +103,7 @@ find_dmrs_custom <- function(mset_train,
       message(sprintf(mes, nrow(mset_train)))
     }
   }
-  
+
   # extract beta values, phenotypic information and GRanges objects
   pd <- as.data.frame(pData(mset_train))
   gr <- granges(mset_train)
@@ -111,17 +111,17 @@ find_dmrs_custom <- function(mset_train,
   colnames(p_beta) <- pd$Sample_Name
   cell <- factor(pd$CellType)
   cell_levels <- levels(cell)
-  
+
   # extract chromosome and position information for each probe in
   #   450k array (need this for regions)
   chr <- as.character(seqnames(gr))
   pos <- start(gr)
   cl <- clusterMaker(chr, pos) # Create clusters using clusterMaker()
-  
+
   # define design matrix to search for DMRs
   xmat = cbind(rep(1, length(cell)), model.matrix(~cell - 1))
   colnames(xmat) = c("Intercept", cell_levels)
-  
+
   if(pairwise_comparison){
     all_poss = as.matrix(expand.grid(c(0,1), c(0,1), c(0,1),
                                      c(0,1), c(0,1), c(0,1)))
@@ -134,7 +134,7 @@ find_dmrs_custom <- function(mset_train,
     all_poss <- (all_poss == TRUE)
     colnames(all_poss) <- cell_levels
   }
-  
+
   regions_all <- GRanges()
   zmat <- c() # regions_all, will contain all cell-type-specific DMRs
   for(ind in seq_len(nrow(all_poss))){
@@ -153,29 +153,29 @@ find_dmrs_custom <- function(mset_train,
         message(sprintf(mes, paste(cell_levels[all_poss[ind,]], collapse=",")))
       }
     }
-    
+
     x_ind = cbind("Intercept" = xmat[, "Intercept"],
                   "cellTypes" = rowSums(
                     as.matrix(xmat[, cell_levels[all_poss[ind,]] ],
                               ncols = length(cell_levels[all_poss[ind,]]))))
-    
+
     if(!include_dmrs){
       gr_regions_up <- GRanges()
       gr_regions_down <- GRanges()
     }
-    
+
     if(include_dmrs){
       bumps = bumphunter(object = p_beta, design = x_ind,
                          chr = chr, pos = pos, cluster = cl,
                          cutoff = bumphunter_beta_cutoff,
                          B = 0, smooth = FALSE,
                          smoothFunction = loessByCluster)
-      
+
       # y_regions are the beta values collapsed (CpGs averaged) by regions
       # from bumphunter
       y_regions <- t(apply(bumps$table[,7:8], 1, function(z){
         colMeans(p_beta[(z[1]):(z[2]),,drop=FALSE]) } ))
-      
+
       tmp <- rowttests(y_regions,factor(x_ind[,"cellTypes"]))
       bumps$table$p.value <- tmp$p.value
       bumps$table$dm <- tmp$dm
@@ -184,14 +184,14 @@ find_dmrs_custom <- function(mset_train,
       bumps$table$dmr_down_max_diff <-
         apply(abs(sweep(y_regions, 2, (1 - x_ind[,"cellTypes"]), FUN = "-")),
               1, max)
-      
+
       # # Only include region with more than 1 CpG (L > 1)
       # #       OR only 1 CpG in region if no other larger regions possible
       L = dm <- NULL
       keep_ind_regions <- (bumps$table$L > 1 |
                              (bumps$table$L==1 & bumps$table$clusterL == 1)) &
         (bumps$table$p.value < dmr_pval_cutoff)  # ideally less than 1e-11
-      
+
       bump_mat_up <- bumps$table[keep_ind_regions & bumps$table$dm < 0 &
                                    # ideally less than 0.6
                                    bumps$table$dmr_up_max_diff<dmr_up_cutoff,]
@@ -205,13 +205,13 @@ find_dmrs_custom <- function(mset_train,
                                            "dmr_status", "dmr_up_max_diff")]
         names(mcols(gr_regions_up))[
           names(mcols(gr_regions_up)) == "dmr_up_max_diff"] <- "dmr_max_diff"
-        
+
         gr_regions_up <- gr_regions_up %>% arrange(-L, dm) %>%
           head(num_regions)
       } else {
         gr_regions_up <- GRanges()
       }
-      
+
       bump_mat_down <- bumps$table[(keep_ind_regions) & bumps$table$dm > 0 &
                                      bumps$table$dmr_down_max_diff <
                                      dmr_down_cutoff,] # ideally less than 0.8
@@ -234,25 +234,25 @@ find_dmrs_custom <- function(mset_train,
         gr_regions_down <- GRanges()
       }
     }
-    
+
     if(include_cpgs){
       tstats <- rowttests(p_beta, factor(x_ind[,"cellTypes"]))
       tstats <- tstats[(tstats[, "p.value"] < cpg_pval_cutoff),]
-      
+
       tstats_up <- tstats[order(tstats[, "dm"], decreasing = FALSE), ]
       # at a min should be less than 0
       tstats_up <- tstats_up[tstats_up$dm < cpg_up_dm_cutoff,]
-      
+
       probe_keep <- rownames(tstats_up)[seq_len(min(nrow(tstats_up),
                                                     num_cpgs))]
       if(length(probe_keep) > 0){
-        gr_probe <- granges(mset_train_flow_sort[probe_keep,])
+        gr_probe <- granges(mset_train[probe_keep,])
         mcols(gr_probe) <- tstats[probe_keep, c("dm", "p.value")]
         mcols(gr_probe)$L <- rep(1, length(probe_keep))
         mcols(gr_probe)$indexStart <- match(probe_keep,
-                                            rownames(mset_train_flow_sort))
+                                            rownames(mset_train))
         mcols(gr_probe)$indexEnd <- match(probe_keep,
-                                          rownames(mset_train_flow_sort))
+                                          rownames(mset_train))
         mcols(gr_probe)$dmr_status <- rep("CpG", length(gr_probe))
         gr_regions_up <- unique(c(gr_regions_up,
                                   gr_probe[,c("indexStart", "indexEnd",
@@ -261,20 +261,20 @@ find_dmrs_custom <- function(mset_train,
         gr_regions_up <- gr_regions_up %>% arrange(-L, dm) %>%
           head(num_regions)
       }
-      
+
       tstats_down <- tstats[order(tstats[, "dm"], decreasing = TRUE), ]
       # at a min should be greater than 0
       tstats_down <- tstats_down[tstats_down$dm > cpg_down_dm_cutoff,]
       probe_keep <- rownames(tstats_down)[seq_len(min(nrow(tstats_down),
                                                       num_cpgs))]
       if(length(probe_keep) > 0){
-        gr_probe <- granges(mset_train_flow_sort[probe_keep,])
+        gr_probe <- granges(mset_train[probe_keep,])
         mcols(gr_probe) <- tstats[probe_keep, c("dm", "p.value")]
         mcols(gr_probe)$L <- rep(1, length(probe_keep))
         mcols(gr_probe)$indexStart <- match(probe_keep,
-                                            rownames(mset_train_flow_sort))
+                                            rownames(mset_train))
         mcols(gr_probe)$indexEnd <- match(probe_keep,
-                                          rownames(mset_train_flow_sort))
+                                          rownames(mset_train))
         mcols(gr_probe)$dmr_status <- rep("CpG", length(gr_probe))
         gr_regions_down <- unique(c(gr_regions_down,
                                     gr_probe[,c("indexStart", "indexEnd",
@@ -285,14 +285,14 @@ find_dmrs_custom <- function(mset_train,
           head(num_regions)
       }
     }
-    
+
     mcols(gr_regions_up)$status <- rep("Up", length(gr_regions_up))
     mcols(gr_regions_down)$status <- rep("Down", length(gr_regions_down))
     bump_mat_all <- c(gr_regions_up, gr_regions_down)
     mcols(bump_mat_all)$cellType <- rep(paste(cell_levels[all_poss[ind,]],
                                               collapse=","),
                                         length(bump_mat_all))
-    
+
     if(verbose){
       if(include_dmrs & include_cpgs){
         mes <- "[estimatecc] Found %s %s cell type-specific regions and CpGs."
@@ -310,7 +310,7 @@ find_dmrs_custom <- function(mset_train,
                         paste(cell_levels[all_poss[ind,]], collapse=",")))
       }
     }
-    
+
     if(length(bump_mat_all) > 0){
       regions_all <- c(regions_all, bump_mat_all)
     }
@@ -325,18 +325,18 @@ find_dmrs_custom <- function(mset_train,
     }
   }
   colnames(zmat) <- cell_levels
-  
+
   y_regions <- t(apply(
     as.data.frame(mcols(regions_all))[,seq_len(2)],1,function(ind){
       colMeans(p_beta[(ind[1]):(ind[2]),,drop=FALSE])
     }))
-  
+
   profiles <- vapply(.splitit(cell),
                      FUN = function(ind){ rowMeans(y_regions[,ind])},
                      FUN.VALUE = numeric(nrow(y_regions)))
-  
+
   removeMe <- duplicated(regions_all)
-  
+
   return(
     list(regions_all = regions_all[!removeMe,],
          zmat = zmat[!removeMe,],
