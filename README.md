@@ -9,10 +9,10 @@ This is a package to estimate the cell composition
 
 ### Updates from the original version
 
-28/01/2021:
+29/01/2021: version 2.0.0
 * Added the option to use already processed methylation data 
 (eg: normalized beta values).  
-* New function *find_dmrs_cust()* for finding Differentially Methylated Regions (DMRs) from
+* New function *find_dmrs_custom()* for finding Differentially Methylated Regions (DMRs) from
 custom reference-cell-type-specific methylation data (esp: in tissues other than Whole Blood)
   
 ### Installing methylCC
